@@ -1,14 +1,24 @@
-import os
 from functions.get_files_info import get_files_info
 
-print("Result for current directory:")
-print(get_files_info("calculator", "."))
 
-print("\nResult for 'pkg' directory:")
-print(get_files_info("calculator", "pkg"))
+def test():
+    result = get_files_info("calculator", ".")
+    print("Result for current directory:")
+    print(result)
+    print("")
 
-print("\nResult for '/bin' directory:")
-print(get_files_info("calculator", "/bin"))
+    result = get_files_info("calculator", "pkg")
+    print("\nResult for 'pkg' directory:")
+    print(result)
 
-print("\nResult for '../' directory:")
-print(get_files_info("calculator", "../"))
+    result = get_files_info("calculator", "/bin") 
+    print("\nResult for '/bin' directory:")
+    print(result)
+
+    result = get_files_info("calculator", "../")
+    print("\nResult for '../' directory:")
+    print(result)
+
+
+if __name__ == "__main__":
+    test()
