@@ -13,3 +13,5 @@ wheels/
 # Msc.
 /solutions
 .DS_Store
+mistakes.md
+*.txt
