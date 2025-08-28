@@ -2,24 +2,25 @@ import os
 
 
 def get_file_info(working_directory, directory="."):
-    target_dir = os.path.abspath(os.path.join(working_directory, directory))
-    abs_dir = os.path.abspath(working_directory)
+
+    abs_working_dir = os.path.abspath(working_directory)
+    abs_file_path = os.path.abspath(os.path.join(working_directory, directory))
 
     """
     IMPORTANT! Without this restriction, the LLM might go running amok anywhere on the machine,
     reading sensitive files or overwriting any data.
     """
 
-    if not target_dir.startswith(abs_dir):
+    if not abs_file_path.startswith(abs_working_dir):
         # Using {directory} param here to preserve the user's original input
         return f'Error: Cannot list "{directory}" as it is outside the permitted working directory'
-    if not os.path.isdir(target_dir):
+    if not os.path.isdir(abs_file_path):
         return f'Error: "{directory}" is not a directory'
 
     try:
         info_list = []
-        for filename in os.listdir(target_dir):
-            filepath = os.path.join(target_dir, filename)
+        for filename in os.listdir(abs_file_path):
+            filepath = os.path.join(abs_file_path, filename)
             is_dir = os.path.isdir(filepath)
             filesize = os.path.getsize(filepath)
             # Retrun a full formatted string for each filename
