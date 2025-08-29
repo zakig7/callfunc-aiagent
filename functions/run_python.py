@@ -15,7 +15,7 @@ def run_python_file(working_directory, file_path, args=None):
         return f'Error: Cannot execute "{file_path}" as it is outside the permitted working directory'
     if not os.path.exists(abs_file_path):
         return f'Error: File "{file_path}" not found.'
-    if not abs_file_path.endswith(".py"):
+    if not file_path.endswith(".py"):
         return f'Error: "{file_path}" is not a Python file.'
 
     try:
@@ -29,12 +29,16 @@ def run_python_file(working_directory, file_path, args=None):
             capture_output=True,
             text=True
         )
+
+        output = []
+        if run_result.stdout:
+            output.append(f"STDOUT:\n{run_result.stdout}")
+        if run_result.stderr:
+            output.append(f"STDERR:\n{run_result.stderr}")
+
+        if run_result.returncode != 0:
+            output.append(f"Process exited with code {run_result.returncode}")
+
+        return "\n".join(output) if output else "No output produced."
     except Exception as e:
         return f"Error: executing Python file: {e}"
-
-    if run_result.stdout == "" and run_result.stderr == "":
-        return "No output produced"
-    elif run_result.returncode == 0:
-        return f'STDOUT:\n{run_result.stdout}\nSTDERR:\n{run_result.stderr}'
-    elif run_result.returncode != 0:
-        return f'STDOUT:\n{run_result.stdout}\nSTDERR:\n{run_result.stderr}\nProcess exited with code {run_result.returncode}'
