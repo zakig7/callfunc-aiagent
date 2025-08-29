@@ -1,7 +1,7 @@
 import os, subprocess
 
 
-def run_python_file(working_directory, file_path, args=[]):
+def run_python_file(working_directory, file_path, args=None):
         
     abs_working_dir = os.path.abspath(working_directory)
     abs_file_path = os.path.abspath(os.path.join(working_directory, file_path))
@@ -19,18 +19,22 @@ def run_python_file(working_directory, file_path, args=[]):
         return f'Error: "{file_path}" is not a Python file.'
 
     try:
-        completed_process = subprocess.run(
-            [
-                "python", file_path, *args 
-            ],
-            cwd=abs_working_dir, timeout=30, capture_output=True, text=True
+        commands = ["python", abs_file_path]
+        if args:
+            commands.extend(args)
+        run_result = subprocess.run(
+            commands,
+            cwd=abs_working_dir,
+            timeout=30,
+            capture_output=True,
+            text=True
         )
     except Exception as e:
         return f"Error: executing Python file: {e}"
 
-    if completed_process.stdout == "" and completed_process.stderr == "":
+    if run_result.stdout == "" and run_result.stderr == "":
         return "No output produced"
-    elif completed_process.returncode == 0:
-        return f'STDOUT:\n{completed_process.stdout}\nSTDERR:\n{completed_process.stderr}'
-    elif completed_process.returncode != 0:
-        return f'STDOUT:\n{completed_process.stdout}\nSTDERR:\n{completed_process.stderr}\nProcess exited with code {completed_process.returncode}'
+    elif run_result.returncode == 0:
+        return f'STDOUT:\n{run_result.stdout}\nSTDERR:\n{run_result.stderr}'
+    elif run_result.returncode != 0:
+        return f'STDOUT:\n{run_result.stdout}\nSTDERR:\n{run_result.stderr}\nProcess exited with code {run_result.returncode}'
