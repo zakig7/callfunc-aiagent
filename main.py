@@ -4,6 +4,7 @@ import argparse
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from prompts import system_prompt
 
 
 def main():
@@ -41,6 +42,7 @@ def fetch_api_response(client, messages, model):
     return client.models.generate_content(
         model=model,
         contents=messages,
+        config=types.GenerateContentConfig(system_instruction=system_prompt),
     )
 
 
