@@ -5,22 +5,23 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from prompts import system_prompt
+from functions.get_file_info import schema_get_files_info
 
 
 def main():
-    """CLI conversational Gemeni tool with a few arguments"""
+    """CLI conversational Gemini tool with a few arguments"""
     load_dotenv()
     user_prompt, verbose, model = parse_args(sys.argv[1:])
-
     api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY not set")
     client = genai.Client(api_key=api_key)
+    config = build_config()
 
     messages = [
         types.Content(role="user", parts=[types.Part(text=user_prompt)]),
     ]
-
-    response = fetch_api_response(client, messages, model)
-
+    response = fetch_api_response(client, messages, model, config)
     output_result(user_prompt, response, verbose, model)
 
 
@@ -38,11 +39,24 @@ def parse_args(args):
     return user_prompt, args.verbose, args.model
 
 
-def fetch_api_response(client, messages, model):
+
+def build_config():
+    # Bundle schemas into a Tool
+    available_functions = types.Tool(
+        function_declarations=[schema_get_files_info]
+        )
+    return types.GenerateContentConfig(
+            # Provide the Tool via config
+            tools=[available_functions],
+            system_instruction=system_prompt,
+    )
+
+
+def fetch_api_response(client, messages, model,config):
     return client.models.generate_content(
         model=model,
         contents=messages,
-        config=types.GenerateContentConfig(system_instruction=system_prompt),
+        config=config,
     )
 
 
@@ -52,8 +66,14 @@ def output_result(user_prompt, response, verbose, model):
         print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
         print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
         print(f"Model: {model}")
-    print("Response:")
-    print(response.text)
+
+    function_call_parts = response.function_calls
+    if function_call_parts and len(function_call_parts) > 0:
+        call_part = function_call_parts[0]
+        print(f"Calling function: {call_part.name}({call_part.args})")
+    else:
+        print("Response:")
+        print(response.text)
 
 
 if __name__ == "__main__":
