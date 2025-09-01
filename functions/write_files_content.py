@@ -1,4 +1,5 @@
 import os
+from google.genai import types
 
 
 def write_file(working_directory, file_path, content):
@@ -9,6 +10,8 @@ def write_file(working_directory, file_path, content):
     """
     IMPORTANT! Without this restriction, the LLM might go running amok anywhere on the machine,
     reading sensitive files or overwriting any data.
+    
+    This give our LLM agent the ability to write and overwrite files.
     """
 
     if not abs_file_path.startswith(abs_working_dir):
@@ -33,3 +36,22 @@ def write_file(working_directory, file_path, content):
         )
     except Exception as e:
         return f"Error: writing to file: {e}"
+
+
+schema_write_files = types.FunctionDeclaration(
+    name="write_files_content",
+    description="Writes contents into files in the specified directory, constrained to the working directory.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "content": types.Schema(
+                type=types.Type.STRING,
+                description="The content that we want to write into the file in the specified directory, relative to the working directory.",
+            ),
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description=" The file path of  where the content should be written. Either an existing file or a new file."
+            ),
+        },
+    ),
+)

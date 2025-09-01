@@ -10,6 +10,8 @@ def get_file_info(working_directory, directory="."):
     """
     IMPORTANT! Without this restriction, the LLM might go running amok anywhere on the machine,
     reading sensitive files or overwriting any data.
+    
+    Enable our LLM agent to list the contents of that directory and see the file's metadata (name and size).
     """
 
     if not abs_file_path.startswith(abs_working_dir):

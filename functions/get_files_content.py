@@ -1,5 +1,6 @@
 import os
 from config import MAX_CHARS
+from google.genai import types
 
 
 def get_file_content(working_directory, file_path):
@@ -10,6 +11,9 @@ def get_file_content(working_directory, file_path):
     """
     IMPORTANT! Without this restriction, the LLM might go running amok anywhere on the machine,
     reading sensitive files or overwriting any data.
+    
+     get the contents of a file. Again, we'll just return the file contents as a string,
+     or an error string if something went wrong.
     """
 
     if not abs_file_path.startswith(abs_working_dir):
@@ -31,3 +35,18 @@ def get_file_content(working_directory, file_path):
         return f"Error: {e}"
     
     return file_content_string
+
+
+schema_get_file_content = types.FunctionDeclaration(
+    name="get_file_content",
+    description="Prints contents of files in the specified directory as string, truncated at 10000 characters, constrained to the working directory.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file": types.Schema(
+                type=types.Type.STRING,
+                description="The file in the specified directory that we'll fetch contents from, relative to the working directory.",
+            ),
+        },
+    ),
+)

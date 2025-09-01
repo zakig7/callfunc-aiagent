@@ -1,4 +1,5 @@
 import os, subprocess
+from google.genai import types
 
 
 def run_python_file(working_directory, file_path, args=None):
@@ -9,6 +10,8 @@ def run_python_file(working_directory, file_path, args=None):
     """
     IMPORTANT! Without this restriction, the LLM might go running amok anywhere on the machine,
     reading sensitive files or overwriting any data.
+    
+    This function enables the LLM to run arbitrary code that we (or it) places in that working directory
     """
 
     if not abs_file_path.startswith(abs_working_dir):
@@ -42,3 +45,22 @@ def run_python_file(working_directory, file_path, args=None):
         return "\n".join(output) if output else "No output produced."
     except Exception as e:
         return f"Error: executing Python file: {e}"
+
+
+schema_run_python = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Writes contents into files in the specified directory, constrained to the working directory.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "args": types.Schema(
+                type=types.Type.STRING,
+                description="The (optional) arguments of the command present in the file we want to execute in the specified directory, relative to the working directory.",
+            ),
+            "file": types.Schema(
+                type=types.Type.STRING,
+                description="The file we want to execute in the specifed directory, relative to the working directory"
+            )
+        },
+    ),
+)
