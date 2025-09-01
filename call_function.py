@@ -3,7 +3,7 @@ from google.genai import types
 from functions.get_files_info import schema_get_files_info
 from functions.get_files_content import schema_get_file_content
 from functions.write_files_content import schema_write_files
-from functions.run_python import schema_run_python
+from functions.run_python import schema_run_python_file
 
 # Bundle schemas into a Tool
 available_functions = types.Tool(
@@ -11,6 +11,6 @@ available_functions = types.Tool(
         schema_get_files_info,
         schema_get_file_content,
         schema_write_files,
-        schema_run_python,
+        schema_run_python_file,
     ]
 )
