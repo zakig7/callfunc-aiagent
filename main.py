@@ -6,7 +6,7 @@ from google import genai
 from google.genai import types
 
 from prompts import system_prompt
-from call_function import available_functions
+from call_function import available_functions, call_function
 
 
 def main():
@@ -63,8 +63,15 @@ def output_result(user_prompt, response, verbose, model):
         return
     
     for function_call_part in response.function_calls:
-        print(f"Calling function: {function_call_part.name}({function_call_part.args})")
+        result_content = call_function(function_call_part, verbose=verbose)
+        
+        try:
+            tool_response = result_content.parts[0].function_response.response
+        except Exception:
+            raise RuntimeError("Missing tool's function call response")
 
+        if verbose:
+            print(f"-> {tool_response}")
 
 if __name__ == "__main__":
     main()
