@@ -62,16 +62,22 @@ def output_result(user_prompt, response, verbose, model):
         print(response.text)
         return
     
+    function_responses = []
     for function_call_part in response.function_calls:
-        result_content = call_function(function_call_part, verbose=verbose)
-        
-        try:
-            tool_response = result_content.parts[0].function_response.response
-        except Exception:
+        function_call_result = call_function(function_call_part, verbose)
+        if (
+            not function_call_result.parts
+            # function_call_result is a types.Content. `parts` is its list of Parts
+            # `parts[0]` is the Part containing the function_response
+            or not function_call_result.parts[0].function_response
+        ):
+            raise Exception("Empty function call result")
+        if verbose:
+            print(f"-> {function_call_result.parts[0].function_response.response}")
+        function_responses.append(function_call_result.parts[0])
+    if not function_responses:
             raise RuntimeError("Missing tool's function call response")
 
-        if verbose:
-            print(f"-> {tool_response}")
 
 if __name__ == "__main__":
     main()

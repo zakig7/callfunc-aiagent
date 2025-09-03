@@ -4,6 +4,7 @@ from functions.get_files_info import schema_get_files_info, get_file_info
 from functions.get_files_content import schema_get_file_content, get_file_content
 from functions.write_files_content import schema_write_files, write_file
 from functions.run_python import schema_run_python_file, run_python_file
+from config import WORKING_DIR
 
 # Bundle schemas into a Tool
 available_functions = types.Tool(
@@ -15,13 +16,6 @@ available_functions = types.Tool(
     ]
 )
 
-functions_map = {
-"get_file_content": get_file_content,
-"get_files_info": get_file_info,
-"write_files": write_file,
-"run_python_file": run_python_file,
-}
-
 
 def call_function(function_call_part, verbose=False):
 
@@ -30,11 +24,15 @@ def call_function(function_call_part, verbose=False):
     else:
         print(f" - Calling function: {function_call_part.name}")
 
-    function_name = function_call_part.name
-    function_arg = function_call_part.args
-    func = functions_map.get(function_name)
+    function_map = {
+    "get_file_content": get_file_content,
+    "get_files_info": get_file_info,
+    "write_files": write_file,
+    "run_python_file": run_python_file,
+    }
 
-    if not func:
+    function_name = function_call_part.name
+    if function_name not in function_map:
         return types.Content(
             role="tool",
             parts=[
@@ -44,12 +42,10 @@ def call_function(function_call_part, verbose=False):
                 )
             ],
         )
-    
-    args = dict(function_arg)
-    args["working_directory"] = "./calculator"
+    args = dict(function_call_part.args)
+    args["working_directory"] = WORKING_DIR
     # Pass a dict into an arg using `keyword arguments`
-    func_result = func(**args)
-
+    func_result = function_map[function_name](**args)
     # Return function call results, from_function_response requires
     # the response to be a dictionary, so we shove the string result into a "result" field.
     return types.Content(
