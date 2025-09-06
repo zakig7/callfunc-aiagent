@@ -7,6 +7,7 @@ from google.genai import types
 
 from prompts import system_prompt
 from call_function import available_functions, call_function
+from config import MAX_ITERS
 
 
 def main():
@@ -21,8 +22,55 @@ def main():
     messages = [
         types.Content(role="user", parts=[types.Part(text=user_prompt)]),
     ]
-    response = fetch_api_response(client, messages, model)
-    output_result(user_prompt, response, verbose, model)
+
+    try:
+        for i in range(20):
+            response = fetch_api_response(client, messages, model)
+
+            # Optional stats    
+            if verbose and response.usage_metadata:
+                print(f"User prompt: {user_prompt}")
+                print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+                print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+                print(f"Model: {model}")
+
+            # Add model replies to the conversation
+            for candidate in response.candidates:
+                messages.append(candidate.content)
+
+            # if model produced final text, stop
+            if response.text and not response.function_calls:
+                print("Final response:" if verbose else "Response:")
+                print(response.text)
+                return
+            
+            # Handle tool calls
+            function_responses = []
+            for func_call in response.function_calls:
+                print(f" - Calling function: {func_call.name}")
+                function_call_result = call_function(func_call, verbose)
+                if (
+                    not function_call_result.parts
+                    # function_call_result is a types.Content. `parts` is its list of Parts
+                    # `parts[0]` is the Part containing the function_response
+                    or not function_call_result.parts[0].function_response
+                ):
+                    raise Exception("Empty function call result")
+                if verbose:
+                    print(f"-> {function_call_result.parts[0].function_response.response}")
+                function_responses.append(function_call_result.parts[0])
+
+            # append tool outputs back into the conversation
+            if function_responses:
+                messages.append(types.Content(role="user", parts=function_responses))
+
+        # hit max iterations without final text
+        if verbose:
+                print(f"Stopped after {MAX_ITERS} steps without a final response.")
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return
 
 
 def parse_args(args):
@@ -48,35 +96,6 @@ def fetch_api_response(client, messages, model):
             tools=[available_functions], system_instruction=system_prompt
         ),
     )
-
-
-def output_result(user_prompt, response, verbose, model):
-    if verbose:
-        print(f"User prompt: {user_prompt}")
-        print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-        print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
-        print(f"Model: {model}")
-
-    if not response.function_calls:
-        print("Response:")
-        print(response.text)
-        return
-    
-    function_responses = []
-    for function_call_part in response.function_calls:
-        function_call_result = call_function(function_call_part, verbose)
-        if (
-            not function_call_result.parts
-            # function_call_result is a types.Content. `parts` is its list of Parts
-            # `parts[0]` is the Part containing the function_response
-            or not function_call_result.parts[0].function_response
-        ):
-            raise Exception("Empty function call result")
-        if verbose:
-            print(f"-> {function_call_result.parts[0].function_response.response}")
-        function_responses.append(function_call_result.parts[0])
-    if not function_responses:
-            raise RuntimeError("Missing tool's function call response")
 
 
 if __name__ == "__main__":
