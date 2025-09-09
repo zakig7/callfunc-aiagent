@@ -11,91 +11,93 @@ from config import MAX_ITERS
 
 
 def main():
-    """CLI conversational Gemini tool with a few arguments"""
     load_dotenv()
-    user_prompt, verbose, model = parse_args(sys.argv[1:])
+
+    verbose = "--verbose" in sys.argv
+    args = []
+    for arg in sys.argv[1:]:
+        if not arg.startswith("--"):
+            args.append(arg)
+
+    # Pass the api key locally in an .env file, and add .env to your .gitignore.
+    # Do not commit the key, or any secrets 
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY not set")
     client = genai.Client(api_key=api_key)
 
+    user_prompt = " ".join(arg)
+
     messages = [
-        types.Content(role="user", parts=[types.Part(text=user_prompt)]),
+        types.Content(role="user", parts=[types.Part(text=user_prompt)])
     ]
 
-    try:
-        for i in range(20):
-            response = fetch_api_response(client, messages, model)
+    # Limit the loop to 20 iterations,
+    # and stop at final text with no func calls
+    iters = 0
+    while True:
+        iters += 1
+        if iters > MAX_ITERS:
+            print(f"Maximum iterations ({MAX_ITERS}) reached.")
+            sys.exit(1)
 
-            # Optional stats    
-            if verbose and response.usage_metadata:
-                print(f"User prompt: {user_prompt}")
-                print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-                print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
-                print(f"Model: {model}")
-
-            # Add model replies to the conversation
-            for candidate in response.candidates:
-                messages.append(candidate.content)
-
-            # if model produced final text, stop
-            if response.text and not response.function_calls:
-                print("Final response:" if verbose else "Response:")
-                print(response.text)
-                return
-            
-            # Handle tool calls
-            function_responses = []
-            for func_call in response.function_calls:
-                print(f" - Calling function: {func_call.name}")
-                function_call_result = call_function(func_call, verbose)
-                if (
-                    not function_call_result.parts
-                    # function_call_result is a types.Content. `parts` is its list of Parts
-                    # `parts[0]` is the Part containing the function_response
-                    or not function_call_result.parts[0].function_response
-                ):
-                    raise Exception("Empty function call result")
-                if verbose:
-                    print(f"-> {function_call_result.parts[0].function_response.response}")
-                function_responses.append(function_call_result.parts[0])
-
-            # append tool outputs back into the conversation
-            if function_responses:
-                messages.append(types.Content(role="user", parts=function_responses))
-
-        # hit max iterations without final text
-        if verbose:
-                print(f"Stopped after {MAX_ITERS} steps without a final response.")
-
-    except Exception as e:
-        print(f"Error: {e}")
-        return
+        try:
+            final_response = generate_content(client, messages, verbose)
+            if final_response:
+                print("Final response:")
+                print(final_response)
+                break
+        except Exception as e:
+            print(f"Error in generate_content: {e}")
 
 
 def parse_args(args):
-    """Add a few arguments"""
     parser = argparse.ArgumentParser(description="AI Code Assistant")
-    # Store Conversational value for context continuity 
     parser.add_argument("prompt", nargs="+", help="Prompt the AI assistant")
     parser.add_argument("--verbose", action="store_true", help="Show API token usage details")
     parser.add_argument("--model", type=str, default="gemini-2.0-flash-001", help="Model version to use")
-
     args = parser.parse_args()
-    user_prompt = " ".join(args.prompt)
-
-    return user_prompt, args.verbose, args.model
+    return " ".join(args.prompt), args.verbose, args.model
 
 
-
-def fetch_api_response(client, messages, model):
-    return client.models.generate_content(
-        model=model,
+def generate_content(client, messages, verbose):
+    response = client.models.generate_content(
+        model="gemini-2.0-flash-001",
         contents=messages,
         config=types.GenerateContentConfig(
             tools=[available_functions], system_instruction=system_prompt
         ),
     )
+    if verbose:
+        print("Prompt tokens:", response.usage_metadata.prompt_token_count)
+        print("Response tokens:", response.usage_metadata.candidates_token_count)
+
+    # Add model replies to conversation
+    if response.candidates:
+        for candidate in response.candidates:
+            function_call_content = candidate.content
+            messages.append(function_call_content)
+
+    # handle tool calls
+    if not response.function_calls:
+        return response.text
+
+    function_responses = []
+    for function_call_part in response.function_calls:
+        function_call_result = call_function(function_call_part, verbose)
+        if (
+            not function_call_result.parts
+            or not function_call_result.parts[0].function_response
+        ):
+            raise Exception("Empty function call result")
+        if verbose:
+            print(f"-> {function_call_result.parts[0].function_response.response}")
+        function_responses.append(function_call_result.parts[0])
+
+    if not function_responses:
+        raise Exception("No function responses generated, exiting.")
+
+    messages.append(types.Content(role="user", parts=function_responses))
 
 
 if __name__ == "__main__":
