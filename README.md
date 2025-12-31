@@ -31,13 +31,14 @@ It will answer the sme way Gemeni, Claude, or ChatGPT would. There's a demo app 
 
 ### Usage
 
-To run the `main.py` script, you need to set the `GEMINI_API_KEY` environment variable. You can do this by creating a `.env` file in the project root directory with the following content:
+To run the `main.py` script, you need to set the `GEMINI_API_KEY` and `GEMINI_MODEL` environment variables. You can do this by creating a `.env` file in the project root directory with the following content:
 
 ```shell
 GEMINI_API_KEY=<YOUR_API_KEY>
+GEMINI_MODEL="gemini-2.5-flash"
 ```
 
-Replace `YOUR_API_KEY` with your actual Gemini API key. Make sure to add `.env` in your `.gitignore`
+Replace `YOUR_API_KEY` with your actual Gemini API key, and choose whatever model you wish. Make sure to add `.env` in your `.gitignore`
 
 Then, you can run the script from the command line:
 
