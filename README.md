@@ -1,6 +1,7 @@
 # AI Coding Assistant
 
-This project is a simplified version of AI-powered coding assistants like Cursor/Zed's Agentic Mode or Claude Code. It allows you to interact with an AI agent that can read, write, and execute code within a sandboxed environment.
+This is a hobby learning project. It's is a simplified version of AI-powered coding assistants like Cursor/Zed's Agentic Mode or Claude Code. It allows you to interact with an AI agent that can read, write, and execute code within a sandboxed environment.
+Langchain does provide great functions, but this approach serves the educational purpose.
 
 **Warning:** This is a toy project and is not intended for production use. Even commercial AI coding assistants have security vulnerabilities, so exercise extreme caution when granting the agent access to your files and system.
 
